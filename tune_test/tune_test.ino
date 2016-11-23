@@ -1,6 +1,6 @@
 #include<TimerOne.h>
 #define MAX_POS 158
-#define MAX_PERIOD 30
+#define MAX_PERIOD 49
 #define RESOLUTION 40
 
 int current_period, current_tick;
@@ -47,6 +47,7 @@ void reset(byte pin)
 
 int btn7_lasted = 0;
 int btn8_lasted = 0;
+int btn7_clicking = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -65,8 +66,6 @@ void setup() {
 
 	Timer1.initialize(RESOLUTION); // Set up a timer at the defined resolution
   Timer1.attachInterrupt(tick); // Attach the tick function
-
-
 
   Serial.begin(9600);
 }
@@ -87,12 +86,16 @@ void loop() {
 		btn8_pushed = digitalRead(8);
 	}
 
+  if (btn7_pushed != btn7_lasted)
+  {
+    btn7_clicking = ~btn7_clicking;
+  }
 	if (btn8_pushed != btn8_lasted && btn8_pushed)
 	{
 			current_period++;
 			if (current_period > MAX_PERIOD)
-					current_period = 0;
-			Serial.println("버튼8 딸깍");
+					current_period = 0;	
+      Serial.println(current_period);
 	}
 
 	btn7_lasted = btn7_pushed;
@@ -100,7 +103,7 @@ void loop() {
 }
 
 void tick() {
-	if (btn7_lasted)
+	if (btn7_clicking)
 	{
 			if (current_period > 0)
 			{
