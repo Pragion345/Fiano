@@ -1,15 +1,33 @@
 #include<thread>
 #include<stdio.h>
 #include<wiringPi.h>
+#include<wiringShift.h>
 #include<termios.h>
 #include<unistd.h>
 #include<chrono>
 #include<ctime>
 #include<limits.h>
+
 using namespace std;
 using namespace chrono;
+
+/** 
+	상수필드
+	*/
 #define MAX_POS 158
+
+const uint8_t DATA_PIN = 2;
+const uint8_t CLOC_PIN = 3;
+const uint8_t PLAY_PIN = 4;
+
+/// period 구하는 공식
+/// 1,000,000 / (진동수 * 2 * 타이머간격)
+int get_period(int frequency, int R){
+	return 500000/(frequency * R)
+}
+
 void togglePin(int, int);
+
 int getch( ) {
 	struct termios oldt,
 					  newt;
@@ -22,15 +40,17 @@ int getch( ) {
   tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
   return ch;
 }
-int current_pos=0,current_direct=HIGH,current_period,current_tick;
-int timing=850,currentState[1],currentdirState;
-bool btnp;
+
+
+int current_pos=0, current_direct=HIGH, current_period, current_tick;
+int interval=850, currentState[1], currentdirState;
+bool PLAY_BTN_pushed_public = 1;
 
 void tick()
 {
-	if(btnp)
+	if(PLAY_BTN_pushed_public)
 	{
-		if(current_period>0)
+		if(current_period > 0)
 		{
 			current_tick++;
 			if(current_period<=current_tick)
@@ -42,6 +62,7 @@ void tick()
 
 	}
 }
+
 void timer()
 {
 	steady_clock::time_point present;
@@ -49,26 +70,24 @@ void timer()
 	while(1)
 	{
 		present=steady_clock::now();
-		if(duration_cast<nanoseconds>(present-begin) >=nanoseconds(timing))
+		if(duration_cast<nanoseconds>(present-begin) >=nanoseconds(interval))
 		{
-		//	togglePin(0,1);
 			tick();
 			begin=present;
 		}
 	}
 }
+
 void togglePin(int pin, int direction_pin) {
 
   //Switch directions if end has been reached
   if (current_pos >= 153) {
     currentdirState = HIGH;
     digitalWrite(direction_pin,HIGH);
-  //  delay(2);
   } 
   else if (current_pos <= 10) {
-currentdirState = LOW;
+	currentdirState = LOW;
     digitalWrite(direction_pin,LOW);
-  //  delay(2);
   }
   //Update currentPosition
   if (currentdirState==HIGH){
@@ -82,8 +101,8 @@ currentdirState = LOW;
   digitalWrite(pin,currentState[0]);
   currentState[0] = ~currentState[0];
 	//printf("%d\n",current_pos);
-	delay(5);
 }
+
 void reset(int pin)
 {
   digitalWrite(pin+1,HIGH); // Go in reverse
@@ -97,45 +116,38 @@ void reset(int pin)
   digitalWrite(pin+1,LOW);
   current_direct = 0; // Ready to go forward.
 }
+
+/**
+	Setup 초기화 코드
+ 	프로그램 시작 후 단 한번만 실행됩니다.	
+	*/
+
 void setup() {
 	wiringPiSetup();
-  // put your setup code here, to run once:
   pinMode(0,OUTPUT);
   pinMode(1,OUTPUT);
-  pinMode(3,INPUT);
+	pinMode(2,INPUT);
+  pinMode(3,OUTPUT);
   reset(0);
 }
 
-int last_pushed = 0;
 void loop() {
+	static int last_pushed_btn = 0;
+	int pushed_btn = 0;
   while(1)
-  {
-  int pushed;
-  pushed=digitalRead(2);
-  if (pushed != last_pushed)
-  {
-    delay(5);
-    pushed = digitalRead(2);
-  }
-  if(pushed)
-  {
-   // togglePin(0,1);
-  	btnp=true;
-  }
-  else
-  {
-     btnp=false;
-	  /*if(currentState==HIGH)
-    {Serial.println("HIGH");}
-    else
-    {Serial.println("LOW");}
-    //Serial.println("off");
-    //digitalWrite(2,LOW);*/
-  }
-  last_pushed = pushed;
- 	
- }
+ 	{
+		pushed_btn = digitalRead(PLAY_PIN);
+
+		if (last_pushed_btn != pushed_btn)
+		{
+				delay(4);
+				pushed_btn = digitalRead(PLAY_PIN);
+				if (last_pushed_btn != pushed_btn)
+					PLAY_BTN_pushed_public = ~PLAY_BTN_pushed_public;
+		}
+ 	}
 }
+
 void set_tune()
 {
 	int tune;
@@ -158,7 +170,7 @@ void set_tune()
 				current_period=1785;
 				break;
 			case 'f':
-				printf("fa");
+				prin`tf("fa");
 				current_period=1685;
 				break;
 			case 'g':
@@ -202,9 +214,9 @@ void set_tune()
 				current_period--;
 					break;
 			case ';':
-					printf("input timing : ");
-					scanf(" %d",&timing);
-					printf("%d\n",timing);
+					printf("input interval : ");
+					scanf(" %d",&interval);
+					printf("%d\n",interval);
 					break;
 
 			default:
