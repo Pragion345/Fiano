@@ -19,7 +19,10 @@ void init_note_period(char*);
 void togglePin(int, int);
 void timer();
 void tick();
-void get_key(int, int, int, uint8_t);
+void get_key(int, int,int, int, uint8_t);
+
+void reset(int, int);
+void reset_all();
 
 /** 
   constant fileds
@@ -34,25 +37,25 @@ void get_key(int, int, int, uint8_t);
 #define FORWARD LOW
 #define BACKWARD HIGH
 
-#define FDD1_MOT_PIN 0;
-#define FDD1_DIR_PIN (FDD1_MOT_PIN + 1);
-#define FDD2_MOT_PIN 2;
-#define FDD2_DIR_PIN (FDD2_MOT_PIN + 1);
-#define FDD3_MOT_PIN 4;
-#define FDD3_DIR_PIN (FDD3_MOT_PIN + 1);
-#define FDD4_MOT_PIN 6;
-#define FDD4_DIR_PIN (FDD3_MOT_PIN + 1);
-#define FDD5_MOT_PIN 8;
-#define FDD5_DIR_PIN (FDD3_MOT_PIN + 1);
-#define FDD6_MOT_PIN 10;
-#define FDD6_DIR_PIN (FDD3_MOT_PIN + 1);
+#define FDD1_MOT_PIN 0
+#define FDD1_DIR_PIN (FDD1_MOT_PIN + 1)
+#define FDD2_MOT_PIN 2
+#define FDD2_DIR_PIN (FDD2_MOT_PIN + 1)
+#define FDD3_MOT_PIN 4
+#define FDD3_DIR_PIN (FDD3_MOT_PIN + 1)
+#define FDD4_MOT_PIN 6
+#define FDD4_DIR_PIN (FDD3_MOT_PIN + 1)
+#define FDD5_MOT_PIN 8
+#define FDD5_DIR_PIN (FDD3_MOT_PIN + 1)
+#define FDD6_MOT_PIN 10
+#define FDD6_DIR_PIN (FDD3_MOT_PIN + 1)
 
-#define DATA_PIN 12;
-#define CLOC_PIN 13;
-#define CLEN_PIN 14;
-#define PL_PIN 15;
+#define DATA_PIN 3
+#define CLOC_PIN 4
+#define CLEN_PIN 5
+#define PL_PIN 2
 
-#define RESOLUTION 1000
+#define RESOLUTION 80000
 #define FIRST_NOTE "C1"
 
 
@@ -87,13 +90,13 @@ int current_state[12] = {
 	HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED
 };
 
-uint64_t btn_state = 0;
+uint8_t btn_state = 0;
 
 void setup() {
 	// GPIO library setup
 	wiringPiSetup();
-
-	init_note_period(FIRST_NOTE);
+	char note[] = FIRST_NOTE;
+	init_note_period(note);
 	
 	pinMode(FDD1_MOT_PIN, OUTPUT);
 	pinMode(FDD1_DIR_PIN, OUTPUT);
@@ -111,36 +114,38 @@ void setup() {
 	pinMode(PL_PIN, OUTPUT);
 	pinMode(CLOC_PIN, OUTPUT);
 	pinMode(CLEN_PIN, OUTPUT);
-	pinMode(DATA_PIN, INPUNT);
+	pinMode(DATA_PIN, INPUT);
 
-	reset_all();
+	reset(0,1);
 }
 
 void tick()
 {
-	for(i =0; i < 12; i += 2)
+	int i;
+	togglePin(0,1);
+	/*for(i =0; i < 12; i += 2)
 	{
 		if(current_period[i] > 0)
 		{
 			current_tick[i]++;
-			if(current_period<=current_tick)
+			if(current_period[i]<=current_tick[i])
 			{
-				current_tick=0;
+				current_tick[i]=0;
 				togglePin(i, i+1);
 			}
 		}
-	}
+	}*/
 }
 /// togglePin make header of FDD move
 /// it makes sounds
 void togglePin(int pin, int dir_pin) {
 
   //Switch directions if end has been reached
-  if (current_pos[pin] >= MAX_TOGGLE_POS) {
+  if (current_pos[pin] >= MAX_TOGGLE_POS-2) {
     current_dir[dir_pin] = BACKWARD;
     digitalWrite(dir_pin, BACKWARD);
   } 
-  else if (current_pos <= MIN_TOGGLE_POS) {
+  else if (current_pos[pin] <= MIN_TOGGLE_POS+2) {
 	current_dir[dir_pin] = FORWARD;
     digitalWrite(dir_pin, FORWARD);
   }
@@ -155,6 +160,8 @@ void togglePin(int pin, int dir_pin) {
   //Pulse the control pin
   digitalWrite(pin,current_state[pin]);
   current_state[pin] = ~current_state[pin];
+	delay(1);	
+  printf("%d %d\n",current_state[pin],current_pos[pin]);
 }
 
 void reset(int pin, int dir_pin)
@@ -187,79 +194,103 @@ void reset_all()
 void loop() {
   while(1)
  	{
-		get_key(DATA_PIN, CLOC_PIN, PL_PIN, MSBFIRST);
+		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN, MSBFIRST);
 
-		if (btn_state & 1ULL << 0)
+
+		if (btn_state & 1)
 			current_period[FDD1_MOT_PIN] = get_period(261.63);
-		if (btn_state & 1ULL << 1)
+		if (btn_state & 2)
 			current_period[FDD1_MOT_PIN] = get_period(293.66);
-		if (btn_state & 1ULL << 2)
+		if (btn_state & 4)
 			current_period[FDD1_MOT_PIN] = get_period(329.63);
-		if (btn_state & ((1ULL << 3) - 1))
+		if (!(btn_state & 7))
 			current_period[FDD1_MOT_PIN] = 0;
+		
 	}
 }
 
-void get_key(int data, int clock, int pl, uint8_t order)
+void get_key(int data, int clock, int clock_enable, int pl, uint8_t order)
 {
 	int i;
 	static uint64_t last_btn = 0;
-	uint64_t btn = 0;
+	uint8_t btn = 0;
 
 	// Parallel load
 	digitalWrite(pl, LOW);
+	delayMicroseconds(2);
 	digitalWrite(pl, HIGH);
+	delayMicroseconds(2);
+
+	digitalWrite(clock, HIGH);
+	digitalWrite(clock_enable, LOW);
 
 	if (order == MSBFIRST)
-		for (i = 48; i >= 0; i--)
+		for (i = 7; i >= 0; i--)
 		{
 			digitalWrite(clock, HIGH);
-			btn |= (uint64_t)digitalRead(data) << i;
+			delayMicroseconds(1);
+			btn |= (uint8_t)digitalRead(data) << i;
 			digitalWrite(clock, LOW);
+			delayMicroseconds(1);
 		}
 	else
-		for (i = 0; i < 49; i++)
+		for (i = 0; i < 8; i++)
 		{
 			digitalWrite(clock, HIGH);
-			btn |= (uint64_t)digitalRead(data) << i;
+			delayMicroseconds(1);
+			btn |= (uint8_t)digitalRead(data) << i;
 			digitalWrite(clock, LOW);
+			delayMicroseconds(1);
 		}
-	}
+	digitalWrite(clock_enable, HIGH);
 	
+/*
 	if (last_btn != btn)
 	{
-		delay(1);
 		digitalWrite(pl, LOW);
+		delayMicroseconds(2);
 		digitalWrite(pl, HIGH);
+		delayMicroseconds(2);
+		
+		digitalWrite(clock, HIGH);
+		digitalWrite(clock_enable, LOW);
+
 		if (order == MSBFIRST)
-			for (i = 48; i >= 0; i--)
+			for (i = 7; i >= 0; i--)
 			{
 				digitalWrite(clock, HIGH);
-				btn |= (uint64_t)digitalRead(data) << i;
+				delayMicroseconds(1);
+				btn |= (uint8_t)digitalRead(data) << i;
 				digitalWrite(clock, LOW);
+				delayMicroseconds(1);
 			}
 		else
-			for (i = 0; i < 49; i++)
+			for (i = 0; i < 8; i++)
 			{
 				digitalWrite(clock, HIGH);
-				btn |= (uint64_t)digitalRead(data) << i;
+				delayMicroseconds(1);
+				btn |= (uint8_t)digitalRead(data) << i;
 				digitalWrite(clock, LOW);
+				delayMicroseconds(1);
 			}
-		}
+		digitalWrite(clock_enable, HIGH);
 
 		if (last_btn != btn)
 			btn_state = btn;
 	}
-
+*/
+		//if (last_btn != btn)
+			btn_state = (btn & 7);
 	last_btn = btn;
 	return;
+
 }
 
 void init_note_period(char* first_note)
 {
 	int i;
 	int num_of_note; // if define standard note with A0, number of A0 = 0 
-	num_of_note = atoi(first_note[1]) * 12;
+	num_of_note = (first_note[1] - 48) * 12;
 
 	switch (first_note[0])
 	{
@@ -286,7 +317,7 @@ void init_note_period(char* first_note)
 
 	for (i = 0; i < 49; i ++)
 	{
-		musical_note_period[i] = get_period(110 * pow(2, ((n + i - 24) / 12)));
+		musical_note_period[i] = get_period(110 * pow(2, ((num_of_note + i - 24) / 12)));
 	}
 }
 
