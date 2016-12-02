@@ -122,8 +122,7 @@ void setup() {
 void tick()
 {
 	int i;
-	togglePin(0,1);
-	/*for(i =0; i < 12; i += 2)
+	for(i =0; i < 12; i += 2)
 	{
 		if(current_period[i] > 0)
 		{
@@ -134,19 +133,19 @@ void tick()
 				togglePin(i, i+1);
 			}
 		}
-	}*/
+	}
 }
 /// togglePin make header of FDD move
 /// it makes sounds
 void togglePin(int pin, int dir_pin) {
 
   //Switch directions if end has been reached
-  if (current_pos[pin] >= MAX_TOGGLE_POS-2) {
+  if (current_pos[pin] >= MAX_TOGGLE_POS) {
     current_dir[dir_pin] = BACKWARD;
     digitalWrite(dir_pin, BACKWARD);
   } 
-  else if (current_pos[pin] <= MIN_TOGGLE_POS+2) {
-	current_dir[dir_pin] = FORWARD;
+  else if (current_pos[pin] <= MIN_TOGGLE_POS) {
+		current_dir[dir_pin] = FORWARD;
     digitalWrite(dir_pin, FORWARD);
   }
   //Update currentPosition
