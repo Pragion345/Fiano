@@ -22,29 +22,34 @@ void delayNanoseconds(unsigned long howlong)
 #ifdef DEBUG
 int main(void)
 {
-	unsigned long l;
+    int i, j;
+    int a[10][20];
+    unsigned long long l;
 	auto start = std::chrono::high_resolution_clock::now();
 	auto end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::nano> elapsed = end-start;
-	while(1)
+	std::chrono::duration<int, std::nano> elapsed = end-start;
+
+    for (i = 0; i < 10; i ++)
 	{
-		printf("Delay 입력 : ");
-		scanf("%lu", &l);
-		start = std::chrono::high_resolution_clock::now();
-		delayNanoseconds(l);
-		end = std::chrono::high_resolution_clock::now();
-		elapsed = end - start;
-		printf("1차: %lfns\n",elapsed.count());
-		start = std::chrono::high_resolution_clock::now();
-		delayNanoseconds(l);
-		end = std::chrono::high_resolution_clock::now();
-		elapsed = end - start;
-		printf("2차: %lfns\n",elapsed.count());
-		start = std::chrono::high_resolution_clock::now();
-		delayNanoseconds(l);
-		end = std::chrono::high_resolution_clock::now();
-		elapsed = end - start;
-		printf("3차: %lfns\n",elapsed.count());
+        l = (i+1) * 100;
+        for (j = 0; j < 20; j++)
+        {
+		    start = std::chrono::high_resolution_clock::now();
+		    delayNanoseconds(l);
+	    	end = std::chrono::high_resolution_clock::now();
+	    	elapsed = end - start;
+            a[i][j] = elapsed.count();
+        }
 	}
+
+    for (i = 0; i <10; i++)
+    {
+        int sum = 0;
+        for (j = 0; j < 20; j++)
+            sum += a[i][j];
+        sum/=20;
+        printf("%d\n", sum);
+    }
+
 }
 #endif
