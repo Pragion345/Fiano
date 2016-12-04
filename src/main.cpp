@@ -7,9 +7,32 @@
 #include<ctime>
 #include<limits.h>
 #include<math.h>
+
+#ifndef DEBUG
 // wiringPi h including
 #include<wiringPi.h>
 #include<wiringShift.h>
+#else
+
+#define MSBFIRST 1
+#define LOW 0
+#define HIGH 1
+#define OUTPUT 1
+#define INPUT 1
+
+int digitalRead(int a)
+{return 0;}
+void digitalWrite(int a, int b)
+{return;}
+void delay(int a)
+{return;}
+void delayMicroseconds(int a)
+{return;}
+void pinMode(int a, int b)
+{return;}
+void wiringPiSetup()
+{return;}
+#endif
 
 using namespace std;
 using namespace chrono;
@@ -31,7 +54,7 @@ void reset_all();
 #define MAX_TOGGLE_POS 153
 #define MIN_TOGGLE_POS 10
 
-#define NOT_USED -2
+#define NOT_USED -99
 #define EMPTY 0
 
 #define FORWARD LOW
@@ -55,7 +78,7 @@ void reset_all();
 #define CLEN_PIN 5
 #define PL_PIN 2
 
-#define RESOLUTION 80000
+#define RESOLUTION 10000
 #define FIRST_NOTE "C1"
 
 
@@ -95,6 +118,7 @@ uint8_t btn_state = 0;
 void setup() {
 	// GPIO library setup
 	wiringPiSetup();
+
 	char note[] = FIRST_NOTE;
 	init_note_period(note);
 	
@@ -116,7 +140,7 @@ void setup() {
 	pinMode(CLEN_PIN, OUTPUT);
 	pinMode(DATA_PIN, INPUT);
 
-	reset(0,1);
+	reset_all();
 }
 
 void tick()
@@ -160,7 +184,6 @@ void togglePin(int pin, int dir_pin) {
   digitalWrite(pin,current_state[pin]);
   current_state[pin] = ~current_state[pin];
 	delay(1);	
-  printf("%d %d\n",current_state[pin],current_pos[pin]);
 }
 
 void reset(int pin, int dir_pin)
@@ -204,7 +227,7 @@ void loop() {
 			current_period[FDD1_MOT_PIN] = get_period(329.63);
 		if (!(btn_state & 7))
 			current_period[FDD1_MOT_PIN] = 0;
-		
+		//printf("%d\n",current_period[FDD1_MOT_PIN]);
 	}
 }
 
@@ -216,9 +239,9 @@ void get_key(int data, int clock, int clock_enable, int pl, uint8_t order)
 
 	// Parallel load
 	digitalWrite(pl, LOW);
-	delayMicroseconds(2);
+	delayMicroseconds(1);
 	digitalWrite(pl, HIGH);
-	delayMicroseconds(2);
+	delayMicroseconds(1);
 
 	digitalWrite(clock, HIGH);
 	digitalWrite(clock_enable, LOW);
@@ -243,13 +266,12 @@ void get_key(int data, int clock, int clock_enable, int pl, uint8_t order)
 		}
 	digitalWrite(clock_enable, HIGH);
 	
-/*
 	if (last_btn != btn)
 	{
 		digitalWrite(pl, LOW);
-		delayMicroseconds(2);
+		delayMicroseconds(1);
 		digitalWrite(pl, HIGH);
-		delayMicroseconds(2);
+		delayMicroseconds(1);
 		
 		digitalWrite(clock, HIGH);
 		digitalWrite(clock_enable, LOW);
@@ -277,9 +299,6 @@ void get_key(int data, int clock, int clock_enable, int pl, uint8_t order)
 		if (last_btn != btn)
 			btn_state = btn;
 	}
-*/
-		//if (last_btn != btn)
-			btn_state = (btn & 7);
 	last_btn = btn;
 	return;
 
@@ -290,7 +309,6 @@ void init_note_period(char* first_note)
 	int i;
 	int num_of_note; // if define standard note with A0, number of A0 = 0 
 	num_of_note = (first_note[1] - 48) * 12;
-
 	switch (first_note[0])
 	{
 		case 'A': break;
@@ -316,7 +334,8 @@ void init_note_period(char* first_note)
 
 	for (i = 0; i < 49; i ++)
 	{
-		musical_note_period[i] = get_period(110 * pow(2, ((num_of_note + i - 24) / 12)));
+		musical_note_period[i] = get_period(110 * pow(2, ((num_of_note + i - 24) / 12.0)));
+		printf("%d\n", musical_note_period[i]);
 	}
 }
 
