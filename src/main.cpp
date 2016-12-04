@@ -78,7 +78,7 @@ void reset_all();
 #define CLEN_PIN 5
 #define PL_PIN 2
 
-#define RESOLUTION 10000
+#define RESOLUTION 10
 #define FIRST_NOTE "C1"
 
 
@@ -88,7 +88,7 @@ void reset_all();
 /// frequency (Hz)
 /// resolution (ns)
 int get_period(double f){
-	return 500000000L/(f * RESOLUTION);
+	return 500000/(f * RESOLUTION);
 }
 
 int musical_note_period[49] = { 0 }; // should calcuate with init_note_period() func
@@ -154,7 +154,6 @@ void tick()
 			current_tick[i]++;
 			if(current_period[i]<=current_tick[i])
 			{
-				printf("tlqkf\n");
 				current_tick[i]=0;
 				togglePin(i, i+1);
 			}
@@ -337,7 +336,6 @@ void init_note_period(char* first_note)
 	for (i = 0; i < 49; i ++)
 	{
 		musical_note_period[i] = get_period(110 * pow(2, ((num_of_note + i - 24) / 12.0)));
-		printf("%d\n", musical_note_period[i]);
 	}
 }
 
@@ -355,15 +353,18 @@ int main(void)
 
 void timer()
 {
-	steady_clock::time_point present;
-	steady_clock::time_point begin=steady_clock::now();
+	steady_clock::time_point present, begin;
+	begin = steady_clock::now();
+	int i;
 	while(1)
 	{
 		present=steady_clock::now();
-		if(duration_cast<nanoseconds>(present-begin) >= nanoseconds(RESOLUTION))
+		if((i=duration_cast<duration<int,micro>>(present - begin).count()) >= 25)
 		{
-			tick();
 			begin=present;
+
+			tick();
+			printf("%d\n",i);
 		}
 	}
 }
