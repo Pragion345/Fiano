@@ -359,12 +359,12 @@ void timer()
 	while(1)
 	{
 		present=steady_clock::now();
-		if((i=duration_cast<duration<int,micro>>(present - begin).count()) >= 25)
+		if((i=duration_cast<duration<int,micro>>(present - begin).count()) >= 0.1)
 		{
 			begin=present;
 
 			tick();
-			printf("%d\n",i);
+			printf("timer : %d\n",i);
 		}
 	}
 }
