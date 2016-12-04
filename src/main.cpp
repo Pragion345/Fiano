@@ -146,13 +146,15 @@ void setup() {
 void tick()
 {
 	int i;
-	for(i =0; i < 12; i += 2)
+
+	for(i = 0; i < 12; i += 2)
 	{
 		if(current_period[i] > 0)
 		{
 			current_tick[i]++;
 			if(current_period[i]<=current_tick[i])
 			{
+				printf("tlqkf\n");
 				current_tick[i]=0;
 				togglePin(i, i+1);
 			}
@@ -184,6 +186,7 @@ void togglePin(int pin, int dir_pin) {
   digitalWrite(pin,current_state[pin]);
   current_state[pin] = ~current_state[pin];
 	delay(1);	
+ // printf("%d %d\n",current_state[pin],current_pos[pin]);
 }
 
 void reset(int pin, int dir_pin)
@@ -217,7 +220,6 @@ void loop() {
   while(1)
  	{
 		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN, MSBFIRST);
-
 
 		if (btn_state & 1)
 			current_period[FDD1_MOT_PIN] = get_period(261.63);
