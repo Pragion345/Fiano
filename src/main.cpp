@@ -78,7 +78,8 @@ void reset_all();
 #define CLEN_PIN 5
 #define PL_PIN 2
 
-#define RESOLUTION 10
+#define RESOLUTION 25
+#define SLEEP_DELAY_LOOP 10
 #define FIRST_NOTE "C1"
 
 
@@ -228,6 +229,8 @@ void loop() {
 			current_period[FDD1_MOT_PIN] = get_period(329.63);
 		if (!(btn_state & 7))
 			current_period[FDD1_MOT_PIN] = 0;
+		
+		usleep(SLEEP_DELAY_LOOP);
 		//printf("%d\n",current_period[FDD1_MOT_PIN]);
 	}
 }
@@ -359,7 +362,7 @@ void timer()
 	while(1)
 	{
 		present=steady_clock::now();
-		if((i=duration_cast<duration<int,micro>>(present - begin).count()) >= 25)
+		if((i=duration_cast<duration<int,micro>>(present - begin).count()) >= RESOLUTION)
 		{
 			begin=present;
 
