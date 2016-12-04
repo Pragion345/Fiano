@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<wiringPi.h>
-
+#include<stdbool.h>
+#define byte char
 #define MAX_POS 158
 int current_pos=0,current_direct=HIGH;
 int currentState[1],currentdirState;
