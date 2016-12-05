@@ -340,7 +340,6 @@ void init_note_period(char* first_note)
 }
 
 
-
 int main(void)
 {
 	setup();
