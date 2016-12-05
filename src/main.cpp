@@ -367,7 +367,7 @@ void timer()
 			begin=present;
 
 			tick();
-			printf("%d\n",i);
+			printf("timer : %d\n",i);
 		}
 	}
 }
