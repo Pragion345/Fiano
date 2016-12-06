@@ -1,20 +1,21 @@
 //#include"manual.h"
+#include<stdio.h>
 #include<chrono>
 #include<thread>
-
+#include<wiringPi.h>
 using namespace std;
 using namespace chrono;
 
 void delayNanoseconds(unsigned long howlong)
 {
-	steady_clock::time_point present = steady_clock::now();
-	steady_clock::time_point end = present + nanoseconds(howlong);
-	duration<long, nano> elapsed = end - present;
+	steady_clock::time_point begin = steady_clock::now();
+	steady_clock::time_point present;
 
-	while(elapsed.count() > 0)
+	while(1)
 	{
 		present = steady_clock::now();
-		elapsed = end - present;
+		if(duration_cast<duration<int, nano>>(present - begin).count() >= howlong)
+			break;
 	}
 	return;
 }
@@ -50,6 +51,20 @@ int main(void)
         sum/=20;
         printf("%d\n", sum);
     }
+		    start = std::chrono::high_resolution_clock::now();
+	    	end = std::chrono::high_resolution_clock::now();
+	    	elapsed = end - start;
+			printf("\ntimeget delay : %d\n", elapsed.count());
+		    start = std::chrono::high_resolution_clock::now();
+		    delayNanoseconds(1000);
+	    	end = std::chrono::high_resolution_clock::now();
+	    	elapsed = end - start;
+			printf("\n%d\n", elapsed.count());
+		    start = std::chrono::high_resolution_clock::now();
+		    delayMicroseconds(1);
+	    	end = std::chrono::high_resolution_clock::now();
+	    	elapsed = end - start;
+			printf("\n%d\n", elapsed.count());
 
 }
 #endif

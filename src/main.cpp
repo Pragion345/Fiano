@@ -6,7 +6,7 @@
 #include<chrono>
 #include<ctime>
 #include<limits.h>
-#include<math.h>
+#include<cmath>
 
 #ifndef DEBUG
 // wiringPi h including
@@ -47,11 +47,12 @@ void get_key(int, int,int, int, uint8_t);
 void reset(int, int);
 void reset_all();
 
+void play_for_debug(int i);
 /** 
   constant fileds
 	*/
 #define MAX_POS 158
-#define MAX_TOGGLE_POS 153
+#define MAX_TOGGLE_POS 150
 #define MIN_TOGGLE_POS 10
 
 #define NOT_USED -99
@@ -60,7 +61,7 @@ void reset_all();
 #define FORWARD LOW
 #define BACKWARD HIGH
 
-#define FDD1_MOT_PIN 0
+#define FDD1_MOT_PIN 0 
 #define FDD1_DIR_PIN (FDD1_MOT_PIN + 1)
 #define FDD2_MOT_PIN 2
 #define FDD2_DIR_PIN (FDD2_MOT_PIN + 1)
@@ -73,14 +74,14 @@ void reset_all();
 #define FDD6_MOT_PIN 10
 #define FDD6_DIR_PIN (FDD3_MOT_PIN + 1)
 
-#define DATA_PIN 3
-#define CLOC_PIN 4
-#define CLEN_PIN 5
+#define DATA_PIN 4
+#define CLOC_PIN 5
+#define CLEN_PIN 3
 #define PL_PIN 2
 
-#define RESOLUTION 25
-#define SLEEP_DELAY_LOOP 10
-#define FIRST_NOTE "C1"
+#define RESOLUTION 30
+#define SLEEP_DELAY_LOOP 1000
+#define FIRST_NOTE "C0"
 
 
 /// period formula
@@ -122,9 +123,11 @@ void setup() {
 
 	char note[] = FIRST_NOTE;
 	init_note_period(note);
+
 	
 	pinMode(FDD1_MOT_PIN, OUTPUT);
 	pinMode(FDD1_DIR_PIN, OUTPUT);
+	/*
 	pinMode(FDD2_MOT_PIN, OUTPUT);
 	pinMode(FDD2_DIR_PIN, OUTPUT);
 	pinMode(FDD3_MOT_PIN, OUTPUT);
@@ -135,13 +138,15 @@ void setup() {
 	pinMode(FDD5_DIR_PIN, OUTPUT);
 	pinMode(FDD6_MOT_PIN, OUTPUT);
 	pinMode(FDD6_DIR_PIN, OUTPUT);
-
+	*/
+	/*
 	pinMode(PL_PIN, OUTPUT);
 	pinMode(CLOC_PIN, OUTPUT);
 	pinMode(CLEN_PIN, OUTPUT);
 	pinMode(DATA_PIN, INPUT);
-
-	reset_all();
+*/
+	reset(0,1);
+//	reset_all();
 }
 
 void tick()
@@ -168,11 +173,11 @@ void togglePin(int pin, int dir_pin) {
   //Switch directions if end has been reached
   if (current_pos[pin] >= MAX_TOGGLE_POS) {
     current_dir[dir_pin] = BACKWARD;
-    digitalWrite(dir_pin, BACKWARD);
+    digitalWrite(dir_pin, HIGH);
   } 
   else if (current_pos[pin] <= MIN_TOGGLE_POS) {
 		current_dir[dir_pin] = FORWARD;
-    digitalWrite(dir_pin, FORWARD);
+    digitalWrite(dir_pin, LOW);
   }
   //Update currentPosition
   if (current_dir[dir_pin] == BACKWARD){
@@ -184,9 +189,8 @@ void togglePin(int pin, int dir_pin) {
 
   //Pulse the control pin
   digitalWrite(pin,current_state[pin]);
-  current_state[pin] = ~current_state[pin];
-	delay(1);	
- // printf("%d %d\n",current_state[pin],current_pos[pin]);
+  current_state[pin] = (current_state[pin] == HIGH)?LOW:HIGH;
+  delayMicroseconds(1);
 }
 
 void reset(int pin, int dir_pin)
@@ -196,6 +200,7 @@ void reset(int pin, int dir_pin)
   int s;
   for (s=0;s<MAX_POS;s+=2){ //Half max because we're stepping directly (no toggle)
     digitalWrite(pin,HIGH);
+    delay(5);
     digitalWrite(pin,LOW);
     delay(5);
   }
@@ -219,7 +224,7 @@ void reset_all()
 void loop() {
   while(1)
  	{
-		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN, MSBFIRST);
+	//	get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN, MSBFIRST);
 
 		if (btn_state & 1)
 			current_period[FDD1_MOT_PIN] = get_period(261.63);
@@ -229,9 +234,30 @@ void loop() {
 			current_period[FDD1_MOT_PIN] = get_period(329.63);
 		if (!(btn_state & 7))
 			current_period[FDD1_MOT_PIN] = 0;
-		
-		usleep(SLEEP_DELAY_LOOP);
-		//printf("%d\n",current_period[FDD1_MOT_PIN]);
+		int i ;
+
+		play_for_debug(28);
+		play_for_debug(26);
+		play_for_debug(24);
+		play_for_debug(28);
+		play_for_debug(28);
+		play_for_debug(28);
+		play_for_debug(26);
+		play_for_debug(26);
+		play_for_debug(26);
+		play_for_debug(28);
+		play_for_debug(26);
+		play_for_debug(24);
+		play_for_debug(26);
+		play_for_debug(28);
+		play_for_debug(28);
+		play_for_debug(28);
+		play_for_debug(26);
+		play_for_debug(26);
+		play_for_debug(28);
+		play_for_debug(26);
+		play_for_debug(24);
+	//	usleep(SLEEP_DELAY_LOOP);
 	}
 }
 
@@ -342,11 +368,20 @@ void init_note_period(char* first_note)
 	}
 }
 
+void play_for_debug(int i)
+{
+	current_period[FDD1_MOT_PIN] = get_period(musical_note_period[i]); 
+	delay(550);
+	current_period[FDD1_MOT_PIN] = 0;
+	delay(200);
+}
+
 
 
 int main(void)
 {
 	setup();
+
 	thread lp(loop);
 	thread tk(timer); 
 	lp.join();
@@ -358,16 +393,14 @@ void timer()
 {
 	steady_clock::time_point present, begin;
 	begin = steady_clock::now();
-	int i;
+	int cnt = 0;
 	while(1)
 	{
 		present=steady_clock::now();
-		if((i=duration_cast<duration<int,micro>>(present - begin).count()) >= RESOLUTION)
+		if((duration_cast<duration<int,micro>>(present - begin).count()) >= RESOLUTION)
 		{
 			begin=present;
-
 			tick();
-			printf("timer : %d\n",i);
 		}
 	}
 }
