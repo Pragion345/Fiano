@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <ctime>
 #include <unistd.h>
-//#include <wiringPi.h>
 #include <chrono>
 #include <thread>
 #include<stdlib.h>
@@ -23,6 +22,7 @@ int tick = 0;
 int Max_tick = 0;
 int on_off = 0;
 extern int musical_note_period[49];
+extern int current_period[12];
 
 /*
 	해당 틱에 도착했을때 검사할게 여러가지있습니다
@@ -30,9 +30,8 @@ extern int musical_note_period[49];
 	1. On(144 ~ 159),(0x90 ~ 0x9F) or OFF (128 ~ 143),(0x80 ~ 0x8F)
 	2. velocity On (0) off(!0)
 	3. octave (C1 ~ B4),(36 ~ 83) 48개
-
-
    */
+
 int check(MidiEvent* mev)
 {
 	int on1 = 0x90;
@@ -78,7 +77,9 @@ void push(MidiFile midifile)
 			if(check(mev))
 			{
 				int note = (int)(*mev)[1] - 36;
+				
 				printf("KEY : %d, ONOFF: %d\n", musical_note_period[note], on_off);
+
 			}
 			else
 			{
@@ -105,7 +106,6 @@ void timer(long double seconds)
 		{
 			begin = present;
 			tick++;
-	//		printf("tick : %d\n", tick);
 		}
 	}
 }
@@ -155,13 +155,14 @@ long double play_MIDI(int argc, char **argv)
 }
 
 void init_note_period(char * first_note);
-#define first "C1"
 
 int main(int argc, char **argv)
 {
-	char note[] = first;
+	// ./a.out 이 1개
+	char ** M = "Tetris.mid";
+	char note[] = "C1";
 	init_note_period(note);
-	int a = play_MIDI(argc, argv);
+	int a = play_MIDI(1, M);
 
 	return 0;
 }
