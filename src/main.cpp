@@ -77,6 +77,9 @@ void play_for_debug(int i);
 #define CLEN_PIN 3
 #define PL_PIN 2
 
+#define DATA_WIDTH 49
+#define CLOC_PULSE_WIDTH 5
+
 #define RESOLUTION 10000
 #define SLEEP_DELAY_LOOP 1000
 #define FIRST_NOTE "C0"
@@ -249,13 +252,6 @@ void loop() {
 	//	get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN, MSBFIRST);
 		
 #ifdef MODEBTN
-		isitplay=digitalRead(MODEBTN)==HIGH: ?true:isitplay;
-		if(isitplay)
-		{
-			digitalWrite(MODELED,HIGH);
-		}
-		else
-			digitalWrite(MODELED,LOW);
 		uint8_t btn_input=0;
 		uint64_t changed_btn,bbtn_state=btn_state;
 		for(int i=0;i<7;i++,btn_input=0)
@@ -264,7 +260,7 @@ void loop() {
 			btn_state=btn_state|(uint64_t)btn_input<<i;	//needs confirm...
 		}
 		changed_btn = btn_state^bbtn_state;
-		for(int i= 0;i<63;i++)
+		for(int i= 0;i<49;i++)
 			if(changed_btn & 1LL<<i)	// if it is changed button state
 			{
 				if(btn_state & 1LL<i)	//chk it was off or on
@@ -276,7 +272,14 @@ void loop() {
 					free_FDD(i+1);
 				}
 			}
+		isplay=digitalRead(MODEBTN)==HIGH: ?true:isitplay;
+		if(isitplay)
+		{
+			digitalWrite(MODELED,HIGH);
 		}
+		else
+			digitalWrite(MODELED,LOW);
+
 #endif	
 		//doremi code
 		if (btn_state & 1)
@@ -313,11 +316,12 @@ void loop() {
 	}
 }
 
-void get_key(int data, int clock, int clock_enable, int pl, uint8_t order)
+void get_key(int data, int clock, int clock_enable, int pl)
 {
 	int i;
 	static uint64_t last_btn = 0;
 	uint64_t btn = 0;
+	uint64_t temp_bit = 0;
 
 	// Parallel load
 	digitalWrite(clock_enable, HIGH);
@@ -327,15 +331,16 @@ void get_key(int data, int clock, int clock_enable, int pl, uint8_t order)
 	digitalWrite(clock_enable, LOW);
 
 
-	if (order == MSBFIRST)
-		for (i = 7; i >= 0; i--)
-		{
-			delayMicroseconds(100);
-			btn |= ((uint64_t)digitalRead(data)) << i;
-			digitalWrite(clock, HIGH);
-			delayMicroseconds(5);
-			digitalWrite(clock, LOW);
-		}
+	for (i = (DATA_WIDTH - 1); i >= 0; i--)
+	{
+		temp_bit =  digitalRead(data);
+		btn |= temp_bit << i;
+		 
+		digitalWrite(clock, HIGH);
+		delayMicroseconds(5);
+		digitalWrite(clock, LOW);
+	}
+
 	/*
 	else
 		for (i = 0; i < 16; i++)
@@ -380,7 +385,7 @@ void get_key(int data, int clock, int clock_enable, int pl, uint8_t order)
 			btn_state = btn;
 	}*/
 
-			btn_state = btn;
+	btn_state = btn;
 	last_btn = btn;
 	return;
 
@@ -434,7 +439,6 @@ int main(void)
 
 #ifndef SHIFT_TEST
 
-
 	while(1)
 	{
 			current_period[0] = 38300;
@@ -449,7 +453,7 @@ int main(void)
 #else
 	while(1)
 	{
-		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN, MSBFIRST);
+		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN);
 		delay(10);
 		printf("%llu\n", btn_state );
 		getchar();
