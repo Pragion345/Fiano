@@ -428,7 +428,6 @@ void play_for_debug(int i)
 	delay(20);
 }
 
-
 int main(void)
 {
 	setup();

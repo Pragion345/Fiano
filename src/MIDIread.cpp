@@ -17,10 +17,12 @@
 using namespace std;
 using namespace chrono;
 
+
+int Mtrack = 0;
 int tick = 0;
 int Max_tick = 0;
-//double C1_B4[48] = {
 int on_off = 0;
+extern int musical_note_period[49];
 
 /*
 	해당 틱에 도착했을때 검사할게 여러가지있습니다
@@ -66,6 +68,7 @@ int check(MidiEvent* mev)
 
 void push(MidiFile midifile)
 {
+	int count = 0;
 	MidiEvent *mev = &midifile[0][0];
 	int event = 1;
 	while(tick < Max_tick + 1000)
@@ -74,16 +77,15 @@ void push(MidiFile midifile)
 		{
 			if(check(mev))
 			{
-				printf("KEY : %0x, ONOFF: %d, tick: %d\n", (int)(*mev)[1], on_off, tick);
+				int note = (int)(*mev)[1] - 36;
+				printf("KEY : %d, ONOFF: %d\n", musical_note_period[note], on_off);
 			}
 			else
 			{
-				if(tick > 10000)
-				{
-					printf("F tick%d\n", tick);
-					printf("finish\n");
+				if((*mev)[0] == 0xFF && tick > 1)
+					count++;
+				if(count == Mtrack - 1)
 					break;
-				}
 			}
 			mev = &midifile[0][event++];
 		}
@@ -127,6 +129,7 @@ long double play_MIDI(int argc, char **argv)
     } else {
         midifile.read(cin);
     }
+	Mtrack = midifile.getTrackCount();
     midifile.joinTracks();
     
 	int TPQ = midifile.getTicksPerQuarterNote();
@@ -140,17 +143,24 @@ long double play_MIDI(int argc, char **argv)
 	long double timer_microseconds = OneTick_seconds(TPQ,mev);
 	mev = &midifile[0][midifile[0].size() - 1];
 	Max_tick = mev -> tick;
-
+	printf("Max tick %d\n", Max_tick);
+	printf("Music Start\n");
+	sleep(1);
 	thread ph(push,midifile);
 	thread tk(timer,timer_microseconds);
 	tk.join();
 	ph.join();
-
+	printf("Music Finish\n");
 	return timer_microseconds;
 }
 
+void init_note_period(char * first_note);
+#define first "C1"
+
 int main(int argc, char **argv)
 {
+	char note[] = first;
+	init_note_period(note);
 	int a = play_MIDI(argc, argv);
 
 	return 0;
