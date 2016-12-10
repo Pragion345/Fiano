@@ -3,8 +3,7 @@
 #include<thread>
 #include<termios.h>
 #include<unistd.h>
-#include<chrono>
-#include<ctime>
+#include<time.h>
 #include<limits.h>
 #include<cmath>
 
@@ -35,12 +34,11 @@ void wiringPiSetup()
 #endif
 
 using namespace std;
-using namespace chrono;
 
 void init_note_period(char*);
 
 void togglePin(int, int);
-void timer();
+void timer(void);
 void tick();
 void get_key(int, int,int, int, uint8_t);
 
@@ -79,7 +77,7 @@ void play_for_debug(int i);
 #define CLEN_PIN 3
 #define PL_PIN 2
 
-#define RESOLUTION 30
+#define RESOLUTION 10000
 #define SLEEP_DELAY_LOOP 1000
 #define FIRST_NOTE "C0"
 
@@ -90,32 +88,32 @@ void play_for_debug(int i);
 /// frequency (Hz)
 /// resolution (ns)
 int get_period(double f){
-	return 500000/(f * RESOLUTION);
+	return 500000000L/(f * RESOLUTION);
 }
-
+bool isitplaymode=false;
 int musical_note_period[49] = { 0 }; // should calcuate with init_note_period() func
 
-int current_pos[12] = {
+int current_pos[12] = {			//position of FDD headers
 	0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED
 };
 
-int current_dir[12] = {
+int current_dir[12] = {			//FDD header's direction
 	NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD
 };
 
-int current_period[12] = {
+int current_period[12] = {		//currently playing tune data
 	EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED
 };
 
-int current_tick[12] = {
+int current_tick[12] = {		//currently ticking time
 	0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED 
 };
 
-int current_state[12] = {
+int current_state[12] = {		//currenly is it working?
 	HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED
 };
-
-uint8_t btn_state = 0;
+int assigned_fdd[50]={0,};		//0 means not assigned = not playing this tune!
+uint64_t btn_state = 0;
 
 void setup() {
 	// GPIO library setup
@@ -123,6 +121,15 @@ void setup() {
 
 	char note[] = FIRST_NOTE;
 	init_note_period(note);
+
+	int i;
+	
+#ifdef MUSICAL_NOTE_CHECK
+	for (i = 0; i < 49; i++)
+	{
+		printf("setup : %d\n", musical_note_period[i]);
+	}
+#endif
 
 	
 	pinMode(FDD1_MOT_PIN, OUTPUT);
@@ -132,27 +139,28 @@ void setup() {
 	pinMode(FDD2_DIR_PIN, OUTPUT);
 	pinMode(FDD3_MOT_PIN, OUTPUT);
 	pinMode(FDD3_DIR_PIN, OUTPUT);
+	*/
 	pinMode(FDD4_MOT_PIN, OUTPUT);
 	pinMode(FDD4_DIR_PIN, OUTPUT);
+	/*
 	pinMode(FDD5_MOT_PIN, OUTPUT);
 	pinMode(FDD5_DIR_PIN, OUTPUT);
 	pinMode(FDD6_MOT_PIN, OUTPUT);
 	pinMode(FDD6_DIR_PIN, OUTPUT);
 	*/
-	/*
 	pinMode(PL_PIN, OUTPUT);
 	pinMode(CLOC_PIN, OUTPUT);
 	pinMode(CLEN_PIN, OUTPUT);
 	pinMode(DATA_PIN, INPUT);
-*/
+
 	reset(0,1);
+	reset(6,7);
 //	reset_all();
 }
 
 void tick()
 {
 	int i;
-
 	for(i = 0; i < 12; i += 2)
 	{
 		if(current_period[i] > 0)
@@ -187,10 +195,10 @@ void togglePin(int pin, int dir_pin) {
     current_pos[pin]++;
   }
 
-  //Pulse the control pin
+   	//Pulse the control pin
+  delayMicroseconds(300);
   digitalWrite(pin,current_state[pin]);
   current_state[pin] = (current_state[pin] == HIGH)?LOW:HIGH;
-  delayMicroseconds(1);
 }
 
 void reset(int pin, int dir_pin)
@@ -220,12 +228,57 @@ void reset_all()
 	reset(FDD6_MOT_PIN, FDD6_DIR_PIN);
 }
 
+void assign_FDD(int tune)
+{
+	for(int i=0;i<12;i+=2)
+		if(!current_period[i])		//if this FDD is not working right now
+		{
+			assigned_FDD[tune]=i;
+			//current_period[i]= //PLZ input right data T^T
+		}
+}
+void free_FDD(int tune)
+{
+	current_period[assigned_FDD[tune]]=0;
+	assgined_FDD[tune]=0;
+}
 
 void loop() {
   while(1)
  	{
 	//	get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN, MSBFIRST);
-
+		
+#ifdef MODEBTN
+		isitplay=digitalRead(MODEBTN)==HIGH: ?true:isitplay;
+		if(isitplay)
+		{
+			digitalWrite(MODELED,HIGH);
+		}
+		else
+			digitalWrite(MODELED,LOW);
+		uint8_t btn_input=0;
+		uint64_t changed_btn,bbtn_state=btn_state;
+		for(int i=0;i<7;i++,btn_input=0)
+		{
+			btn_input=shiftIn(DATAPIN,CLKPIN,LSBFIRST);
+			btn_state=btn_state|(uint64_t)btn_input<<i;	//needs confirm...
+		}
+		changed_btn = btn_state^bbtn_state;
+		for(int i= 0;i<63;i++)
+			if(changed_btn & 1LL<<i)	// if it is changed button state
+			{
+				if(btn_state & 1LL<i)	//chk it was off or on
+				{
+					assign_FDD(i+1);	
+				}
+				else
+				{
+					free_FDD(i+1);
+				}
+			}
+		}
+#endif	
+		//doremi code
 		if (btn_state & 1)
 			current_period[FDD1_MOT_PIN] = get_period(261.63);
 		if (btn_state & 2)
@@ -234,7 +287,6 @@ void loop() {
 			current_period[FDD1_MOT_PIN] = get_period(329.63);
 		if (!(btn_state & 7))
 			current_period[FDD1_MOT_PIN] = 0;
-		int i ;
 
 		play_for_debug(28);
 		play_for_debug(26);
@@ -257,7 +309,7 @@ void loop() {
 		play_for_debug(28);
 		play_for_debug(26);
 		play_for_debug(24);
-	//	usleep(SLEEP_DELAY_LOOP);
+	//		usleep(SLEEP_DELAY_LOOP);
 	}
 }
 
@@ -265,37 +317,35 @@ void get_key(int data, int clock, int clock_enable, int pl, uint8_t order)
 {
 	int i;
 	static uint64_t last_btn = 0;
-	uint8_t btn = 0;
+	uint64_t btn = 0;
 
 	// Parallel load
+	digitalWrite(clock_enable, HIGH);
 	digitalWrite(pl, LOW);
-	delayMicroseconds(1);
+	delayMicroseconds(5);
 	digitalWrite(pl, HIGH);
-	delayMicroseconds(1);
-
-	digitalWrite(clock, HIGH);
 	digitalWrite(clock_enable, LOW);
+
 
 	if (order == MSBFIRST)
 		for (i = 7; i >= 0; i--)
 		{
+			delayMicroseconds(100);
+			btn |= ((uint64_t)digitalRead(data)) << i;
 			digitalWrite(clock, HIGH);
-			delayMicroseconds(1);
-			btn |= (uint8_t)digitalRead(data) << i;
+			delayMicroseconds(5);
 			digitalWrite(clock, LOW);
-			delayMicroseconds(1);
 		}
+	/*
 	else
-		for (i = 0; i < 8; i++)
+		for (i = 0; i < 16; i++)
 		{
 			digitalWrite(clock, HIGH);
-			delayMicroseconds(1);
-			btn |= (uint8_t)digitalRead(data) << i;
+			delayMicroseconds(2);
+			btn |= (uint64_t)digitalRead(data) << i;
 			digitalWrite(clock, LOW);
-			delayMicroseconds(1);
-		}
-	digitalWrite(clock_enable, HIGH);
-	
+		}*/
+/*	
 	if (last_btn != btn)
 	{
 		digitalWrite(pl, LOW);
@@ -328,7 +378,9 @@ void get_key(int data, int clock, int clock_enable, int pl, uint8_t order)
 
 		if (last_btn != btn)
 			btn_state = btn;
-	}
+	}*/
+
+			btn_state = btn;
 	last_btn = btn;
 	return;
 
@@ -371,38 +423,74 @@ void init_note_period(char* first_note)
 void play_for_debug(int i)
 {
 	current_period[FDD1_MOT_PIN] = get_period(musical_note_period[i]); 
-	delay(550);
+	delay(55);
 	current_period[FDD1_MOT_PIN] = 0;
-	delay(200);
+	delay(20);
 }
-
 
 
 int main(void)
 {
 	setup();
 
+#ifndef SHIFT_TEST
+
+
+	while(1)
+	{
+			current_period[0] = 38300;
+
+		tick();
+	}
+
+	thread tk(timer);
 	thread lp(loop);
-	thread tk(timer); 
 	lp.join();
 	tk.join();
+#else
+	while(1)
+	{
+		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN, MSBFIRST);
+		delay(10);
+		printf("%llu\n", btn_state );
+		getchar();
+	}
+#endif
 	return 0;
 }
 
-void timer()
+void timer(void)
 {
-	steady_clock::time_point present, begin;
-	begin = steady_clock::now();
-	int cnt = 0;
+	struct timespec present, begin;
+	clock_gettime(CLOCK_MONOTONIC, &begin);
+	#ifndef INTERVAL_CHECK
 	while(1)
 	{
-		present=steady_clock::now();
-		if((duration_cast<duration<int,micro>>(present - begin).count()) >= RESOLUTION)
+		clock_gettime(CLOCK_MONOTONIC, &present);
+		if((present.tv_nsec - begin.tv_nsec) >= RESOLUTION)
 		{
 			begin=present;
 			tick();
 		}
 	}
+	#else
+	int cnt = 0;
+	long aa;
+	while(1)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &present);
+		if((aa = present.tv_nsec - begin.tv_nsec) >= RESOLUTION)
+		{
+			begin=present;
+			tick();
+			if (cnt++ >= 600)
+			{
+				cnt = 0;
+			//	printf("timer : %ld\n", aa);
+			}
+		}
+	}
+	#endif
 }
 
 

@@ -1,8 +1,9 @@
-//#include"manual.h"
+#include"manual.h"
 #include<stdio.h>
-#include<chrono>
 #include<thread>
 #include<wiringPi.h>
+#include<chrono>
+
 using namespace std;
 using namespace chrono;
 
@@ -19,7 +20,6 @@ void delayNanoseconds(unsigned long howlong)
 	}
 	return;
 }
-
 #ifdef DEBUG
 int main(void)
 {
@@ -66,5 +66,39 @@ int main(void)
 	    	elapsed = end - start;
 			printf("\n%d\n", elapsed.count());
 
+	struct timespec ends, starts;
+
+	long b[10][20];
+    for (i = 0; i < 10; i ++)
+	{
+        l = (i+1) * 100;
+        for (j = 0; j < 20; j++)
+        {
+			clock_gettime(CLOCK_MONOTONIC, &starts);
+		    delayNanoseconds(l);
+			clock_gettime(CLOCK_MONOTONIC, &ends);
+            b[i][j] = ends.tv_nsec - starts.tv_nsec;
+        }
+	}
+
+    for (i = 0; i <10; i++)
+    {
+        long sum = 0;
+        for (j = 0; j < 20; j++)
+            sum += b[i][j];
+        sum/=20;
+        printf("%ld\n", sum);
+    }
+			clock_gettime(CLOCK_MONOTONIC, &starts);
+			clock_gettime(CLOCK_MONOTONIC, &ends);
+			printf("\ntimeget delay : %ld\n", ends.tv_nsec - starts.tv_nsec);
+			clock_gettime(CLOCK_MONOTONIC, &starts);
+		    delayNanoseconds(1000);
+			clock_gettime(CLOCK_MONOTONIC, &ends);
+			printf("\n%ld\n", ends.tv_nsec - starts.tv_nsec);
+			clock_gettime(CLOCK_MONOTONIC, &starts);
+		    delayMicroseconds(1);
+			clock_gettime(CLOCK_MONOTONIC, &ends);
+			printf("\n%ld\n\n", ends.tv_nsec - starts.tv_nsec);
 }
 #endif
