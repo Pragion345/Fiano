@@ -236,14 +236,14 @@ void assign_FDD(int tune)
 	for(int i=0;i<12;i+=2)
 		if(!current_period[i])		//if this FDD is not working right now
 		{
-			assigned_FDD[tune]=i;
+			assigned_fdd[tune]=i;
 			//current_period[i]= //PLZ input right data T^T
 		}
 }
 void free_FDD(int tune)
 {
-	current_period[assigned_FDD[tune]]=0;
-	assgined_FDD[tune]=0;
+	current_period[assigned_fdd[tune]]=0;
+	assigned_fdd[tune]=0;
 }
 
 void loop() {
