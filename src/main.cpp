@@ -98,24 +98,24 @@ int get_period(double f){
 bool isitplaymode=false;
 int musical_note_period[49] = { 0 }; // should calcuate with init_note_period() func
 
-int current_pos[12] = {			//position of FDD headers
-	0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED
+int current_pos[14] = {			//position of FDD headers
+	0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, NOT_USED
 };
 
-int current_dir[12] = {			//FDD header's direction
-	NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD
+int current_dir[14] = {			//FDD header's direction
+	NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD, NOT_USED, FORWARD
 };
 
-int current_period[12] = {		//currently playing tune data
-	EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED
+int current_period[14] = {		//currently playing tune data
+	EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED, EMPTY, NOT_USED
 };
 
-int current_tick[12] = {		//currently ticking time
-	0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED 
+int current_tick[14] = {		//currently ticking time
+	0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED, 0, NOT_USED
 };
 
-int current_state[12] = {		//currenly is it working?
-	HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED
+int current_state[14] = {		//currenly is it working?
+	HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED, HIGH, NOT_USED
 };
 int assigned_fdd[50]={0,};		//0 means not assigned = not playing this tune!
 uint64_t btn_state = 0;
@@ -163,7 +163,7 @@ void setup() {
 void tick()
 {
 	int i;
-	for(i = 0; i < 12; i += 2)
+	for(i = 0; i < 14; i += 2)
 	{
 		if(current_period[i] > 0)
 		{
@@ -310,34 +310,32 @@ void loop() {
 		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN);
 		
 #ifdef MODEBTN
-		uint8_t btn_input=0;
-		uint64_t changed_btn,bbtn_state=btn_state;
-		for(int i=0;i<7;i++,btn_input=0)
-		{
-			btn_input=shiftIn(DATAPIN,CLKPIN,LSBFIRST);
-			btn_state=btn_state|(uint64_t)btn_input<<i;	//needs confirm...
-		}
-		changed_btn = btn_state^bbtn_state;
-		for(int i= 0;i<49;i++)
-			if(changed_btn & 1LL<<i)	// if it is changed button state
-			{
-				if(btn_state & 1LL<i)	//chk it was off or on
-				{
-					assign_FDD(i+1);	
-				}
-				else
-				{
-					free_FDD(i+1);
-				}
-			}
-		isplay=digitalRead(MODEBTN)==HIGH: ?true:isitplay;
-		if(isitplay)
+		if(btn_state & MODEBTN)
+			isitplayingmode=!isitplayingmode;
+		if(isitplayingmode)
 		{
 			digitalWrite(MODELED,HIGH);
+			MMM();	//start MIDI playing mode
 		}
 		else
+		{
 			digitalWrite(MODELED,LOW);
-
+			if (btn_state & 1)
+				assign_FDD(36);
+			else free_FDD(36);
+			if (btn_state & 2)
+				assign_FDD(38);
+			else free_FDD(38);
+			if (btn_state & 4)
+				assign_FDD(40);
+			else free_FDD(40);
+			if (btn_state & 8)
+				assign_FDD(41);
+			else free_FDD(41);
+			if (btn_state & 16)
+				assign_FDD(43);
+			else free_FDD(43);
+		}
 #endif
 		if (btn_state & 1)
 			assign_FDD(36);
