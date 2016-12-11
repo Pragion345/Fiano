@@ -7,6 +7,7 @@
 #include<time.h>
 #include<limits.h>
 #include<cmath>
+#include<string.h>
 
 #ifndef DEBUG
 // wiringPi h including
@@ -67,11 +68,11 @@ void play_for_debug(int i);
 #define FDD3_MOT_PIN 4
 #define FDD3_DIR_PIN (FDD3_MOT_PIN + 1)
 #define FDD4_MOT_PIN 6
-#define FDD4_DIR_PIN (FDD3_MOT_PIN + 1)
-#define FDD5_MOT_PIN 8
-#define FDD5_DIR_PIN (FDD3_MOT_PIN + 1)
-#define FDD6_MOT_PIN 10
-#define FDD6_DIR_PIN (FDD3_MOT_PIN + 1)
+#define FDD4_DIR_PIN (FDD4_MOT_PIN + 1)
+#define FDD5_MOT_PIN 10
+#define FDD5_DIR_PIN (FDD5_MOT_PIN + 1)
+#define FDD6_MOT_PIN 12
+#define FDD6_DIR_PIN (FDD6_MOT_PIN + 1)
 
 #define DATA_PIN 21
 #define CLOC_PIN 22
@@ -122,12 +123,15 @@ uint64_t btn_state = 0;
 void setup() {
 	// GPIO library setup
 	wiringPiSetup();
-
+	//memset(assigned_fdd,-1,sizeof(int)*50);
 	char note[] = FIRST_NOTE;
 	init_note_period(note);
 
 	int i;
-	
+	for(int i=0;i<50;i++)
+	{
+		assigned_fdd[i]=-1;
+	}
 #ifdef MUSICAL_NOTE_CHECK
 	for (i = 0; i < 49; i++)
 	{
@@ -228,17 +232,76 @@ void reset_all()
 
 void assign_FDD(int tune)
 {
-	for(int i=0;i<12;i+=2)
+	if(assigned_fdd[tune]<0)
+	{
+	for(int i=0;i<=12;i+=2)
+	{
+		if(i==8) continue;
 		if(!current_period[i])		//if this FDD is not working right now
 		{
 			assigned_fdd[tune]=i;
-			//current_period[i]= //PLZ input right data T^T
+			switch(i)
+			{
+				case 0:
+				current_period[FDD1_MOT_PIN]=musical_note_period[tune];
+				printf("%d assigned at 1\n",tune);
+				break;
+				case 2:
+				current_period[FDD2_MOT_PIN]=musical_note_period[tune];
+				printf("%d assigned at 2\n",tune);
+				break;
+				case 4:
+				current_period[FDD3_MOT_PIN]=musical_note_period[tune];
+				printf("%d assigned at 3\n",tune);
+				break;
+				case 6:
+				current_period[FDD4_MOT_PIN]=musical_note_period[tune];
+				printf("%d assigned at 4\n",tune);
+				break;
+				case 10:
+				current_period[FDD5_MOT_PIN]=musical_note_period[tune];
+				printf("%d assigned at 5\n",tune);
+				break;
+				case 12:
+				current_period[FDD6_MOT_PIN]=musical_note_period[tune];
+				printf("%d assigned at 6\n",tune);
+				break;
+			}
+			break;
 		}
+	}
+	}
 }
 void free_FDD(int tune)
 {
-	current_period[assigned_fdd[tune]]=0;
-	assigned_fdd[tune]=0;
+	switch(assigned_fdd[tune])
+	{
+		case 0:
+		current_period[FDD1_MOT_PIN]=0;
+		printf("FDD 1 stopped playing %d\n",tune);	
+		break;
+		case 2:
+		current_period[FDD2_MOT_PIN]=0;
+		printf("FDD 2 stopped playing %d\n",tune);	
+		break;
+		case 4:
+		current_period[FDD3_MOT_PIN]=0;
+		printf("FDD 3 stopped playing %d\n",tune);	
+		break;
+		case 6:
+		current_period[FDD4_MOT_PIN]=0;
+		printf("FDD 4 stopped playing %d\n",tune);	
+		break;
+		case 10:
+		current_period[FDD5_MOT_PIN]=0;
+		printf("FDD 5 stopped playing %d\n",tune);	
+		break;
+		case 12:
+		current_period[FDD6_MOT_PIN]=0;
+		printf("FDD 6 stopped playing %d\n",tune);	
+		break;
+	}
+	assigned_fdd[tune]=-1;
 }
 
 void loop() {
@@ -275,21 +338,38 @@ void loop() {
 		else
 			digitalWrite(MODELED,LOW);
 
-#endif	
+#endif
+		if (btn_state & 1)
+			assign_FDD(36);
+		else free_FDD(36);
+		if (btn_state & 2)
+			assign_FDD(38);
+		else free_FDD(38);
+		if (btn_state & 4)
+			assign_FDD(40);
+		else free_FDD(40);
+		if (btn_state & 8)
+			assign_FDD(41);
+		else free_FDD(41);
+		if (btn_state & 16)
+			assign_FDD(43);
+		else free_FDD(43);
+#ifdef DOREMI
+
 		//doremi code
 		if (btn_state & 1)
-			current_period[FDD1_MOT_PIN] = musical_note_period[36];
+			current_period[FDD2_MOT_PIN] = musical_note_period[36];
 		if (btn_state & 2)
-			current_period[FDD1_MOT_PIN] = musical_note_period[38];
+			current_period[FDD2_MOT_PIN] = musical_note_period[38];
 		if (btn_state & 4)
-			current_period[FDD1_MOT_PIN] = musical_note_period[40];
+			current_period[FDD2_MOT_PIN] = musical_note_period[40];
 		if (btn_state & 8)
-			current_period[FDD1_MOT_PIN] = musical_note_period[41];
+			current_period[FDD2_MOT_PIN] = musical_note_period[41];
 		if (btn_state & 16)
-			current_period[FDD1_MOT_PIN] = musical_note_period[43];
+			current_period[FDD2_MOT_PIN] = musical_note_period[43];
 		if (!(btn_state & 31))
-			current_period[FDD1_MOT_PIN] = 0;
-
+			current_period[FDD2_MOT_PIN] = 0;
+#endif
 /*
 		play_for_debug(28);
 		play_for_debug(26);
