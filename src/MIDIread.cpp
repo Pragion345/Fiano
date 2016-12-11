@@ -1,18 +1,8 @@
 #include "MidiFile.h"
 #include "Options.h"
 #include <iostream>
-#include <iomanip>
-#include <stdio.h>
-#include <ctime>
 #include <unistd.h>
-//#include <wiringPi.h>
-#include <chrono>
 #include <thread>
-#include<stdlib.h>
-#include<thread>
-#include<termios.h>
-#include<limits.h>
-#include<math.h>
 
 using namespace std;
 using namespace chrono;
@@ -23,6 +13,7 @@ int tick = 0;
 int Max_tick = 0;
 int on_off = 0;
 extern int musical_note_period[49];
+extern int current_period[12];
 
 /*
 	해당 틱에 도착했을때 검사할게 여러가지있습니다
@@ -30,9 +21,8 @@ extern int musical_note_period[49];
 	1. On(144 ~ 159),(0x90 ~ 0x9F) or OFF (128 ~ 143),(0x80 ~ 0x8F)
 	2. velocity On (0) off(!0)
 	3. octave (C1 ~ B4),(36 ~ 83) 48개
-
-
    */
+
 int check(MidiEvent* mev)
 {
 	int on1 = 0x90;
@@ -71,14 +61,25 @@ void push(MidiFile midifile)
 	int count = 0;
 	MidiEvent *mev = &midifile[0][0];
 	int event = 1;
-	while(tick < Max_tick + 1000)
+	while(tick < Max_tick + 10)
 	{
 		if(tick >= mev -> tick)
 		{
+
 			if(check(mev))
 			{
 				int note = (int)(*mev)[1] - 36;
-				printf("KEY : %d, ONOFF: %d\n", musical_note_period[note], on_off);
+			
+				if(on_off)
+				{
+					current_period[((mev -> track) - 1) * 2] = musical_note_period[note];
+					printf("print outave : %d\n", current_period[((mev -> track) - 1) * 2]);
+				}
+				else
+				{
+					current_period[((mev -> track) - 1) * 2] = 0;
+				}	
+
 			}
 			else
 			{
@@ -105,7 +106,6 @@ void timer(long double seconds)
 		{
 			begin = present;
 			tick++;
-	//		printf("tick : %d\n", tick);
 		}
 	}
 }
@@ -155,11 +155,11 @@ long double play_MIDI(int argc, char **argv)
 }
 
 void init_note_period(char * first_note);
-#define first "C1"
 
 int main(int argc, char **argv)
 {
-	char note[] = first;
+	// ./a.out 이 1개
+	char note[] = "C1";
 	init_note_period(note);
 	int a = play_MIDI(argc, argv);
 
