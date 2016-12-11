@@ -1,17 +1,8 @@
 #include "MidiFile.h"
 #include "Options.h"
 #include <iostream>
-#include <iomanip>
-#include <stdio.h>
-#include <ctime>
 #include <unistd.h>
-#include <chrono>
 #include <thread>
-#include<stdlib.h>
-#include<thread>
-#include<termios.h>
-#include<limits.h>
-#include<math.h>
 
 using namespace std;
 using namespace chrono;
@@ -70,15 +61,24 @@ void push(MidiFile midifile)
 	int count = 0;
 	MidiEvent *mev = &midifile[0][0];
 	int event = 1;
-	while(tick < Max_tick + 1000)
+	while(tick < Max_tick + 10)
 	{
 		if(tick >= mev -> tick)
 		{
+
 			if(check(mev))
 			{
 				int note = (int)(*mev)[1] - 36;
-				
-				printf("KEY : %d, ONOFF: %d\n", musical_note_period[note], on_off);
+			
+				if(on_off)
+				{
+					current_period[((mev -> track) - 1) * 2] = musical_note_period[note];
+					printf("print outave : %d\n", current_period[((mev -> track) - 1) * 2]);
+				}
+				else
+				{
+					current_period[((mev -> track) - 1) * 2] = 0;
+				}	
 
 			}
 			else
@@ -159,10 +159,9 @@ void init_note_period(char * first_note);
 int main(int argc, char **argv)
 {
 	// ./a.out 이 1개
-	char ** M = "Tetris.mid";
 	char note[] = "C1";
 	init_note_period(note);
-	int a = play_MIDI(1, M);
+	int a = play_MIDI(argc, argv);
 
 	return 0;
 }
