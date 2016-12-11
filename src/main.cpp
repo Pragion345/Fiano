@@ -1,3 +1,4 @@
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<thread>
@@ -40,7 +41,7 @@ void init_note_period(char*);
 void togglePin(int, int);
 void timer(void);
 void tick();
-void get_key(int, int,int, int, uint8_t);
+void get_key(int, int,int, int);
 
 void reset(int, int);
 void reset_all();
@@ -72,15 +73,15 @@ void play_for_debug(int i);
 #define FDD6_MOT_PIN 10
 #define FDD6_DIR_PIN (FDD3_MOT_PIN + 1)
 
-#define DATA_PIN 4
-#define CLOC_PIN 5
-#define CLEN_PIN 3
-#define PL_PIN 2
+#define DATA_PIN 21
+#define CLOC_PIN 22
+#define CLEN_PIN 23
+#define PL_PIN 24
 
 #define DATA_WIDTH 49
 #define CLOC_PULSE_WIDTH 5
 
-#define RESOLUTION 10000
+#define RESOLUTION 8000
 #define SLEEP_DELAY_LOOP 1000
 #define FIRST_NOTE "C0"
 
@@ -137,28 +138,22 @@ void setup() {
 	
 	pinMode(FDD1_MOT_PIN, OUTPUT);
 	pinMode(FDD1_DIR_PIN, OUTPUT);
-	/*
 	pinMode(FDD2_MOT_PIN, OUTPUT);
 	pinMode(FDD2_DIR_PIN, OUTPUT);
 	pinMode(FDD3_MOT_PIN, OUTPUT);
 	pinMode(FDD3_DIR_PIN, OUTPUT);
-	*/
 	pinMode(FDD4_MOT_PIN, OUTPUT);
 	pinMode(FDD4_DIR_PIN, OUTPUT);
-	/*
 	pinMode(FDD5_MOT_PIN, OUTPUT);
 	pinMode(FDD5_DIR_PIN, OUTPUT);
 	pinMode(FDD6_MOT_PIN, OUTPUT);
 	pinMode(FDD6_DIR_PIN, OUTPUT);
-	*/
 	pinMode(PL_PIN, OUTPUT);
 	pinMode(CLOC_PIN, OUTPUT);
 	pinMode(CLEN_PIN, OUTPUT);
 	pinMode(DATA_PIN, INPUT);
 
-	reset(0,1);
-	reset(6,7);
-//	reset_all();
+	reset_all();
 }
 
 void tick()
@@ -187,7 +182,7 @@ void togglePin(int pin, int dir_pin) {
     digitalWrite(dir_pin, HIGH);
   } 
   else if (current_pos[pin] <= MIN_TOGGLE_POS) {
-		current_dir[dir_pin] = FORWARD;
+	current_dir[dir_pin] = FORWARD;
     digitalWrite(dir_pin, LOW);
   }
   //Update currentPosition
@@ -199,7 +194,7 @@ void togglePin(int pin, int dir_pin) {
   }
 
    	//Pulse the control pin
-  delayMicroseconds(300);
+  delayMicroseconds(1);
   digitalWrite(pin,current_state[pin]);
   current_state[pin] = (current_state[pin] == HIGH)?LOW:HIGH;
 }
@@ -249,7 +244,7 @@ void free_FDD(int tune)
 void loop() {
   while(1)
  	{
-	//	get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN, MSBFIRST);
+		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN);
 		
 #ifdef MODEBTN
 		uint8_t btn_input=0;
@@ -283,14 +278,19 @@ void loop() {
 #endif	
 		//doremi code
 		if (btn_state & 1)
-			current_period[FDD1_MOT_PIN] = get_period(261.63);
+			current_period[FDD1_MOT_PIN] = musical_note_period[36];
 		if (btn_state & 2)
-			current_period[FDD1_MOT_PIN] = get_period(293.66);
+			current_period[FDD1_MOT_PIN] = musical_note_period[38];
 		if (btn_state & 4)
-			current_period[FDD1_MOT_PIN] = get_period(329.63);
-		if (!(btn_state & 7))
+			current_period[FDD1_MOT_PIN] = musical_note_period[40];
+		if (btn_state & 8)
+			current_period[FDD1_MOT_PIN] = musical_note_period[41];
+		if (btn_state & 16)
+			current_period[FDD1_MOT_PIN] = musical_note_period[43];
+		if (!(btn_state & 31))
 			current_period[FDD1_MOT_PIN] = 0;
 
+/*
 		play_for_debug(28);
 		play_for_debug(26);
 		play_for_debug(24);
@@ -313,6 +313,9 @@ void loop() {
 		play_for_debug(26);
 		play_for_debug(24);
 	//		usleep(SLEEP_DELAY_LOOP);
+	*/
+
+		delay(1);
 	}
 }
 
@@ -341,51 +344,40 @@ void get_key(int data, int clock, int clock_enable, int pl)
 		digitalWrite(clock, LOW);
 	}
 
-	/*
-	else
-		for (i = 0; i < 16; i++)
-		{
-			digitalWrite(clock, HIGH);
-			delayMicroseconds(2);
-			btn |= (uint64_t)digitalRead(data) << i;
-			digitalWrite(clock, LOW);
-		}*/
-/*	
 	if (last_btn != btn)
 	{
-		digitalWrite(pl, LOW);
-		delayMicroseconds(1);
-		digitalWrite(pl, HIGH);
-		delayMicroseconds(1);
-		
-		digitalWrite(clock, HIGH);
-		digitalWrite(clock_enable, LOW);
-
-		if (order == MSBFIRST)
-			for (i = 7; i >= 0; i--)
-			{
-				digitalWrite(clock, HIGH);
-				delayMicroseconds(1);
-				btn |= (uint8_t)digitalRead(data) << i;
-				digitalWrite(clock, LOW);
-				delayMicroseconds(1);
-			}
-		else
-			for (i = 0; i < 8; i++)
-			{
-				digitalWrite(clock, HIGH);
-				delayMicroseconds(1);
-				btn |= (uint8_t)digitalRead(data) << i;
-				digitalWrite(clock, LOW);
-				delayMicroseconds(1);
-			}
 		digitalWrite(clock_enable, HIGH);
+		digitalWrite(pl, LOW);
+		delayMicroseconds(5);
+		digitalWrite(pl, HIGH);
+		digitalWrite(clock_enable, LOW);
+		
+		for (i = (DATA_WIDTH - 1); i >= 0; i--)
+		{
+			temp_bit =  digitalRead(data);
+			btn |= temp_bit << i;
+				 
+			digitalWrite(clock, HIGH);
+			delayMicroseconds(5);
+			digitalWrite(clock, LOW);
+		}
 
+#ifdef SHIFT_TEST
+		if (last_btn != btn)
+		{
+			uint64_t mask = 1LLU << (DATA_WIDTH - 1);
+			for (i = 0; i < DATA_WIDTH; i++)
+			{
+				printf("%d", (btn & mask)?1:0);
+				mask >>= 1;
+			}
+			printf("\n");
+		}
+#else
 		if (last_btn != btn)
 			btn_state = btn;
-	}*/
-
-	btn_state = btn;
+#endif
+	}
 	last_btn = btn;
 	return;
 
@@ -437,28 +429,10 @@ int main(void)
 {
 	setup();
 
-#ifndef SHIFT_TEST
-
-	while(1)
-	{
-			current_period[0] = 38300;
-
-		tick();
-	}
-
 	thread tk(timer);
 	thread lp(loop);
 	lp.join();
 	tk.join();
-#else
-	while(1)
-	{
-		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN);
-		delay(10);
-		printf("%llu\n", btn_state );
-		getchar();
-	}
-#endif
 	return 0;
 }
 
@@ -466,15 +440,19 @@ void timer(void)
 {
 	struct timespec present, begin;
 	clock_gettime(CLOCK_MONOTONIC, &begin);
+	long elapsed = 0;
 	#ifndef INTERVAL_CHECK
 	while(1)
 	{
 		clock_gettime(CLOCK_MONOTONIC, &present);
-		if((present.tv_nsec - begin.tv_nsec) >= RESOLUTION)
+		elapsed = present.tv_nsec - begin.tv_nsec;
+		if(elapsed >= RESOLUTION)
 		{
 			begin=present;
 			tick();
 		}
+		else if(elapsed < 0)
+			begin.tv_nsec -= 1000000000L;
 	}
 	#else
 	int cnt = 0;
@@ -484,14 +462,17 @@ void timer(void)
 		clock_gettime(CLOCK_MONOTONIC, &present);
 		if((aa = present.tv_nsec - begin.tv_nsec) >= RESOLUTION)
 		{
-			begin=present;
+			begin = present;
 			tick();
 			if (cnt++ >= 600)
 			{
 				cnt = 0;
-			//	printf("timer : %ld\n", aa);
+				printf("timer : %ld\n", aa);
 			}
+
 		}
+		if (aa< 0)
+			begin.tv_nsec -= 1000000000L;
 	}
 	#endif
 }
