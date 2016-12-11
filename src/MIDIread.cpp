@@ -16,8 +16,8 @@ int on_off = 0;
 extern int musical_note_period[49];
 extern int current_period[12];
 char *arr[100] = {NULL};
+extern bool isitplayingmode;
 extern uint64_t btn_state;
-
 /*
 	해당 틱에 도착했을때 검사할게 여러가지있습니다
 	
@@ -69,6 +69,8 @@ int timer(long double seconds, MidiFile midifile)
 	int i;
 	while(tick < Max_tick)
 	{
+		if(isitplayingmode == false)
+			return 1000;
 		present = steady_clock::now();
 		if((i=duration_cast<duration<int,micro>>(present - begin).count())     >= seconds)
 		{
@@ -76,7 +78,7 @@ int timer(long double seconds, MidiFile midifile)
 			tick++;
             
 		}
-		else if(btn_state)
+		else if(btn_state) 
 		{
 			switch(btn_state)
 			{
@@ -84,8 +86,6 @@ int timer(long double seconds, MidiFile midifile)
 					return -1;
 				case 2:
 					return 1;
-				case 3:
-					return 1000;
 				default:
 					break;
 			}
@@ -98,7 +98,19 @@ int timer(long double seconds, MidiFile midifile)
                 if(check(mev))
                 {
                     int note = (int)(*mev)[1] - 36;
-                    
+                    if(note < 0)
+					{
+						while(note >= 0)
+							note += 12;
+					}
+					else if (note > 48)
+					{
+						while(note <= 48)
+							note -= 48;
+					}
+					else
+						;
+
                     if(on_off)
                     {
                         current_period[((mev -> track) - 1) * 2] = musical_note_period[note];
