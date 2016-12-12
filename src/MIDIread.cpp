@@ -1,10 +1,11 @@
-
+#include <string.h>
 #include "MidiFile.h"
 #include "Options.h"
 #include <iostream>
 #include <unistd.h>
 #include <thread>
 #include<dirent.h>
+#include<stdio.h>
 using namespace std;
 using namespace chrono;
 
@@ -13,9 +14,10 @@ int Mtrack = 0;
 int tick = 0;
 int Max_tick = 0;
 int on_off = 0;
+char *arr[100] = {NULL};
+
 extern int musical_note_period[49];
 extern int current_period[12];
-char *arr[100] = {NULL};
 extern bool isitplayingmode;
 extern uint64_t btn_state;
 /*
@@ -23,7 +25,7 @@ extern uint64_t btn_state;
 	
 	1. On(144 ~ 159),(0x90 ~ 0x9F) or OFF (128 ~ 143),(0x80 ~ 0x8F)
 	2. velocity On (0) off(!0)
-	3. octave (C1 ~ B4),(36 ~ 83) 48개
+	3. octave (C1 ~ B4),(24 ~ 83) 48개
    */
 
 int check(MidiEvent* mev)
@@ -78,7 +80,7 @@ int timer(long double seconds, MidiFile midifile)
 			tick++;
             
 		}
-		else if(btn_state) 
+	/*	else if(btn_state) 
 		{
 			switch(btn_state)
 			{
@@ -89,32 +91,31 @@ int timer(long double seconds, MidiFile midifile)
 				default:
 					break;
 			}
-		}
-        else
+		}*/
+       // else
         {
             if(tick >= mev -> tick)
             {
-                
                 if(check(mev))
                 {
-                    int note = (int)(*mev)[1] - 36;
+                    int note = (int)(*mev)[1] - 24;
                     if(note < 0)
 					{
 						while(note >= 0)
 							note += 12;
+						printf("too low\n");
 					}
 					else if (note > 48)
 					{
 						while(note <= 48)
-							note -= 48;
+							note -= 12;
+						printf("too high\n");
 					}
-					else
-						;
 
                     if(on_off)
                     {
                         current_period[((mev -> track) - 1) * 2] = musical_note_period[note];
-                    }
+					}
                     else
                     {
                         current_period[((mev -> track) - 1) * 2] = 0;
@@ -148,19 +149,21 @@ long double play_MIDI(char *arp[100], int loc)
 	int tick = 0;
     MidiFile midifile; 
 	
-   	midifile.read(*(arp + loc));
+	cout<<"play : "<<arp[loc]<<endl;
+	
+   	midifile.read(arp[loc]);
 	Mtrack = midifile.getTrackCount();
     midifile.joinTracks();
     
-	int TPQ = midifile.getTicksPerQuarterNote();
-    MidiEvent* mev = &midifile[0][0];
-	int event = 0;
 	
+	int TPQ = midifile.getTicksPerQuarterNote();
+	MidiEvent* mev = &midifile[0][0];
+	int event = 0;
+	cout << "fdsa L:::" << TPQ << endl;
 	while( !((*mev)[0] == 0xff && (*mev)[1] == 0x51) )
 	{
 		mev = &midifile[0][++event];
 	}
-	
 	long double timer_microseconds = OneTick_seconds(TPQ,mev);
 	mev = &midifile[0][midifile[0].size() - 1];
 	Max_tick = mev -> tick;
@@ -176,7 +179,7 @@ int call_midi()
 	int i = 0;
 	while((dirp = readdir(midi)))
 	{
-		if(strstr(dirp -> d_name, "mid"))
+		if(strstr(dirp -> d_name, ".mid"))
 		{
 			arr[i] = (char *)malloc(sizeof(char) * (strlen(dirp -> d_name) + 1));
 			strcpy(arr[i], dirp -> d_name);
@@ -197,10 +200,12 @@ void MMM()
 
 	int Music_count = 1 + call_midi();
 	int a = 1;
-	btn_state = 1;
 	while(a)
 	{
 		a += play_MIDI(arr, a - 1);
+	 Mtrack = 0;
+	 tick = 0;
+	 Max_tick = 0;
 		if(a == Music_count + 1)
 		{
 			a = 1;
@@ -209,7 +214,7 @@ void MMM()
 		{
 			a = Music_count;
 		}
-		else if( a > Music_count)
+		else if( a > Music_count+ 1)
 		{
 			a = 0;
 		}

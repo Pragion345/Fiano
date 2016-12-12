@@ -48,6 +48,8 @@ void reset(int, int);
 void reset_all();
 
 void play_for_debug(int i);
+
+extern void MMM();
 /** 
   constant fileds
 	*/
@@ -95,7 +97,7 @@ void play_for_debug(int i);
 int get_period(double f){
 	return 500000000L/(f * RESOLUTION);
 }
-bool isitplaymode=false;
+bool isitplayingmode=true;
 int musical_note_period[49] = { 0 }; // should calcuate with init_note_period() func
 
 int current_pos[14] = {			//position of FDD headers
@@ -210,9 +212,9 @@ void reset(int pin, int dir_pin)
   int s;
   for (s=0;s<MAX_POS;s+=2){ //Half max because we're stepping directly (no toggle)
     digitalWrite(pin,HIGH);
-    delay(5);
+    delayMicroseconds(300);
     digitalWrite(pin,LOW);
-    delay(5);
+    delayMicroseconds(300);
   }
 
   current_pos[pin] = 0; // We're reset.
@@ -312,14 +314,17 @@ void loop() {
 #ifdef MODEBTN
 		if(btn_state & MODEBTN)
 			isitplayingmode=!isitplayingmode;
+#endif
 		if(isitplayingmode)
 		{
-			digitalWrite(MODELED,HIGH);
+			printf("start MMMM\n");
+			//	digitalWrite(MODELED,HIGH);
 			MMM();	//start MIDI playing mode
+			printf("done!\n");
 		}
 		else
 		{
-			digitalWrite(MODELED,LOW);
+		//	digitalWrite(MODELED,LOW);
 			if (btn_state & 1)
 				assign_FDD(36);
 			else free_FDD(36);
@@ -335,8 +340,9 @@ void loop() {
 			if (btn_state & 16)
 				assign_FDD(43);
 			else free_FDD(43);
+		
 		}
-#endif
+/*
 		if (btn_state & 1)
 			assign_FDD(36);
 		else free_FDD(36);
@@ -352,6 +358,7 @@ void loop() {
 		if (btn_state & 16)
 			assign_FDD(43);
 		else free_FDD(43);
+*/
 #ifdef DOREMI
 
 		//doremi code
@@ -502,7 +509,6 @@ void play_for_debug(int i)
 	current_period[FDD1_MOT_PIN] = 0;
 	delay(20);
 }
-
 int main(void)
 {
 	setup();
@@ -513,7 +519,6 @@ int main(void)
 	tk.join();
 	return 0;
 }
-
 void timer(void)
 {
 	struct timespec present, begin;
