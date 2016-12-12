@@ -68,7 +68,7 @@ int timer(long double seconds, MidiFile midifile)
     int event = 1;
 	steady_clock::time_point present, begin;
 	begin = steady_clock::now();
-	int i;
+	int i,nfdd;
 	while(tick < Max_tick)
 	{
 		if(isitplayingmode == false)
@@ -98,7 +98,8 @@ int timer(long double seconds, MidiFile midifile)
             {
                 if(check(mev))
                 {
-                    int note = (int)(*mev)[1] - 24;
+                    int note = (int)(*mev)[1]-12;
+					cout << "note : "<< note << endl;
                     if(note < 0)
 					{
 						while(note >= 0)
@@ -111,14 +112,16 @@ int timer(long double seconds, MidiFile midifile)
 							note -= 12;
 						printf("too high\n");
 					}
-
+					nfdd=((mev->track)-1)*2;
+					if(nfdd>=8) nfdd+=2;
                     if(on_off)
                     {
-                        current_period[((mev -> track) - 1) * 2] = musical_note_period[note];
+			
+                        current_period[nfdd] = musical_note_period[note];
 					}
                     else
                     {
-                        current_period[((mev -> track) - 1) * 2] = 0;
+                        current_period[nfdd] = 0;
                     }
                     
                 }
