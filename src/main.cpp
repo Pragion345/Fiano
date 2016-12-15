@@ -276,27 +276,27 @@ void free_FDD(int tune)
 {
 	switch(assigned_fdd[tune])
 	{
-		case 0:
+		case FDD1_MOT_PIN:
 		current_period[FDD1_MOT_PIN]=0;
 		printf("FDD 1 stopped playing %d\n",tune);	
 		break;
-		case 2:
+		case FDD2_MOT_PIN:
 		current_period[FDD2_MOT_PIN]=0;
 		printf("FDD 2 stopped playing %d\n",tune);	
 		break;
-		case 4:
+		case FDD3_MOT_PIN:
 		current_period[FDD3_MOT_PIN]=0;
 		printf("FDD 3 stopped playing %d\n",tune);	
 		break;
-		case 6:
+		case FDD4_MOT_PIN:
 		current_period[FDD4_MOT_PIN]=0;
 		printf("FDD 4 stopped playing %d\n",tune);	
 		break;
-		case 10:
+		case FDD5_MOT_PIN:
 		current_period[FDD5_MOT_PIN]=0;
 		printf("FDD 5 stopped playing %d\n",tune);	
 		break;
-		case 12:
+		case FDD6_MOT_PIN:
 		current_period[FDD6_MOT_PIN]=0;
 		printf("FDD 6 stopped playing %d\n",tune);	
 		break;
@@ -315,12 +315,19 @@ void loop() {
 		if(isitplayingmode)
 		{
 			digitalWrite(MODELED,HIGH);
+			printf("starting MIDI playing sequence...\n");
 			MMM();	//start MIDI playing mode
 		}
 		else
 		{
 			digitalWrite(MODELED,LOW);
-			if (btn_state & 1)
+			for(int i=0;i<49;i++)
+			{
+				if(btn_state & (1LL<<i))
+					assign_FDD(i);
+				else free_FDD(i);
+			}
+			/*if (btn_state & 1)
 				assign_FDD(36);
 			else free_FDD(36);
 			if (btn_state & 2)
@@ -334,7 +341,7 @@ void loop() {
 			else free_FDD(41);
 			if (btn_state & 16)
 				assign_FDD(43);
-			else free_FDD(43);
+			else free_FDD(43);*/
 		}
 #endif
 		if (btn_state & 1)

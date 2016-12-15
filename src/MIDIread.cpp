@@ -73,7 +73,7 @@ void push(MidiFile midifile)
 				if(on_off)
 				{
 					current_period[((mev -> track) - 1) * 2] = musical_note_period[note];
-					printf("print outave : %d\n", current_period[((mev -> track) - 1) * 2]);
+					printf("print octave : %d\n", current_period[((mev -> track) - 1) * 2]);
 				}
 				else
 				{
