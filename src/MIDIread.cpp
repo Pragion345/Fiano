@@ -18,7 +18,7 @@ int on_off = 0;
 char *arr[100] = {NULL};
 
 extern int musical_note_period[49];
-extern int current_period[12];
+extern int current_period[14];
 extern bool isitplayingmode;
 extern uint64_t btn_state;
 /*
@@ -70,6 +70,7 @@ int timer(long double seconds, MidiFile midifile)
 	steady_clock::time_point present, begin;
 	begin = steady_clock::now();
 	int i,nfdd;
+	int tlqkf[6] = {0,2,4,6,10,12};
 	while(tick < Max_tick)
 	{
 		if(isitplayingmode == false)
@@ -101,6 +102,7 @@ int timer(long double seconds, MidiFile midifile)
                 {
                     int note = (int)(*mev)[1]-CONST_MNOTE;
 					cout << "note : "<< note << endl;
+					cout << "tlqkf!!! :  "<< mev -> track << endl;
                     if(note < 0)
 					{
 						while(note >= 0)
@@ -113,25 +115,32 @@ int timer(long double seconds, MidiFile midifile)
 							note -= 12;
 						printf("too high\n");
 					}
-					nfdd=((mev->track)-1)*2;
-					if(nfdd>=8) nfdd+=2;
                     if(on_off)
                     {
-			
-                        current_period[nfdd] = musical_note_period[note];
+                        current_period[tlqkf[(mev -> track) -1]] = musical_note_period[note];
+					/*	if(Mtrack - 1 + (mev -> track) <=6)
+						{
+                       	 	current_period[tlqkf[Mtrack + (mev -> track) -1]] = musical_note_period[note];
+						}*/
 					}
                     else
                     {
-                        current_period[nfdd] = 0;
+                        current_period[tlqkf[(mev -> track) -1]] = 0;
+					/*	if(Mtrack - 1 + (mev -> track) <=6)
+						{
+                       	 	current_period[tlqkf[Mtrack + (mev -> track) -1]] = 0;
+						}*/
                     }
                     
                 }
                 else
                 {
-                    if((*mev)[0] == 0xFF && tick > 1)
+                    if((*mev)[0] == 0xFF && tick > 100)
                         count++;
                     if(count == Mtrack - 1)
-                        break;
+					{
+						break;
+					}
                 }
                 mev = &midifile[0][event++];
             }

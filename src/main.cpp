@@ -1,5 +1,6 @@
-
 #include<stdio.h>
+:q
+gpio readall
 #include<stdlib.h>
 #include<thread>
 #include<termios.h>
@@ -97,7 +98,7 @@ extern void MMM();
 int get_period(double f){
 	return 500000000L/(f * RESOLUTION);
 }
-bool isitplayingmode=true;
+bool isitplayingmode=false;
 int musical_note_period[49] = { 0 }; // should calcuate with init_note_period() func
 
 int current_pos[14] = {			//position of FDD headers
