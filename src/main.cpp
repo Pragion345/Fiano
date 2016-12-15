@@ -169,6 +169,7 @@ void tick()
 	{
 		if(current_period[i] > 0)
 		{
+
 			current_tick[i]++;
 			if(current_period[i]<=current_tick[i])
 			{

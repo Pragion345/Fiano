@@ -6,6 +6,7 @@
 #include <thread>
 #include<dirent.h>
 #include<stdio.h>
+#define CONST_MNOTE 12 
 using namespace std;
 using namespace chrono;
 
@@ -98,7 +99,7 @@ int timer(long double seconds, MidiFile midifile)
             {
                 if(check(mev))
                 {
-                    int note = (int)(*mev)[1]-12;
+                    int note = (int)(*mev)[1]-CONST_MNOTE;
 					cout << "note : "<< note << endl;
                     if(note < 0)
 					{
