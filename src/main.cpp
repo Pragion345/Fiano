@@ -1,6 +1,4 @@
 #include<stdio.h>
-:q
-gpio readall
 #include<stdlib.h>
 #include<thread>
 #include<termios.h>
@@ -21,7 +19,18 @@ gpio readall
 #define HIGH 1
 #define OUTPUT 1
 #define INPUT 1
-
+int getch()
+{
+  struct termios oldt,newt;
+  int    ch;
+  tcgetattr( STDIN_FILENO, &oldt );
+  newt = oldt;
+  newt.c_lflag &= ~( ICANON | ECHO );
+  tcsetattr( STDIN_FILENO, TCSANOW, &newt );
+  ch = getchar();
+  tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
+  return ch;
+}
 int digitalRead(int a)
 {return 0;}
 void digitalWrite(int a, int b)
@@ -98,7 +107,11 @@ extern void MMM();
 int get_period(double f){
 	return 500000000L/(f * RESOLUTION);
 }
+#ifdef MIDI
+bool isitplayingmode=true;
+#else
 bool isitplayingmode=false;
+#endif
 int musical_note_period[49] = { 0 }; // should calcuate with init_note_period() func
 
 int current_pos[14] = {			//position of FDD headers
@@ -280,27 +293,27 @@ void free_FDD(int tune)
 {
 	switch(assigned_fdd[tune])
 	{
-		case 0:
+		case FDD1_MOT_PIN:
 		current_period[FDD1_MOT_PIN]=0;
 		printf("FDD 1 stopped playing %d\n",tune);	
 		break;
-		case 2:
+		case FDD2_MOT_PIN:
 		current_period[FDD2_MOT_PIN]=0;
 		printf("FDD 2 stopped playing %d\n",tune);	
 		break;
-		case 4:
+		case FDD3_MOT_PIN:
 		current_period[FDD3_MOT_PIN]=0;
 		printf("FDD 3 stopped playing %d\n",tune);	
 		break;
-		case 6:
+		case FDD4_MOT_PIN:
 		current_period[FDD4_MOT_PIN]=0;
 		printf("FDD 4 stopped playing %d\n",tune);	
 		break;
-		case 10:
+		case FDD5_MOT_PIN:
 		current_period[FDD5_MOT_PIN]=0;
 		printf("FDD 5 stopped playing %d\n",tune);	
 		break;
-		case 12:
+		case FDD6_MOT_PIN:
 		current_period[FDD6_MOT_PIN]=0;
 		printf("FDD 6 stopped playing %d\n",tune);	
 		break;
@@ -309,6 +322,7 @@ void free_FDD(int tune)
 }
 
 void loop() {
+	int k,bk=0;
   while(1)
  	{
 		get_key(DATA_PIN, CLOC_PIN, CLEN_PIN, PL_PIN);
@@ -326,8 +340,50 @@ void loop() {
 		}
 		else
 		{
-		//	digitalWrite(MODELED,LOW);
-			if (btn_state & 1)
+#ifndef KEYBOARD
+			for(int i=0;i<49;i++)
+			{
+				if(btn_state & (1LL<<i))
+					assign_FDD(i);
+				else free_FDD(i);
+			}
+#endif
+#ifdef KEYBOARD
+		k= getch();
+		if(k!=bk &&bk!=0 )
+		{
+			free_FDD(bk);
+			switch(k)
+			{
+				   case 'z':
+					   assign_FDD(36);
+					   break;
+				   case 'x':
+					   assign_FDD(38);
+				   break;
+				   case 'c':
+				   	  assign_FDD(40);
+					  break;
+				   case 'v':
+					  assign_FDD(41);
+					  break;
+				   case 'b':
+					  assign_FDD(43);
+					  break;
+				   case 'n':
+					  assign_FDD(45);
+					  break;
+				   case 'm':
+					  assign_FDD(49);
+					  break;
+				   case ',':
+					  assign_FDD(51);
+					  break;
+			}
+			bk=k;
+		}
+#endif
+			/*if (btn_state & 1)
 				assign_FDD(36);
 			else free_FDD(36);
 			if (btn_state & 2)
@@ -341,8 +397,7 @@ void loop() {
 			else free_FDD(41);
 			if (btn_state & 16)
 				assign_FDD(43);
-			else free_FDD(43);
-		
+			else free_FDD(43);*/
 		}
 /*
 		if (btn_state & 1)
@@ -562,9 +617,8 @@ void timer(void)
 	#endif
 }
 
-
-/* It not used, For test musical note
-int getch( ) {
+// It not used, For test musical note
+/*int getch() {
 	struct termios oldt,
 					  newt;
   int    ch;
